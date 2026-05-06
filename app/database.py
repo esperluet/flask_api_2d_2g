@@ -20,3 +20,15 @@ def init_db() -> None:
 
 def get_db_session():
    return SessionLocal()
+
+def init_db() -> None:
+    from app.models.author import Author
+    from app.models.book import Book
+    from app.models.student import Student
+    from app.models.loan import Loan
+
+    Base.metadata.create_all(bind=engine)
+
+
+def get_db_session():
+    return SessionLocal()
