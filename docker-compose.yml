@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:latest
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_DB=library
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=pass_word_12
+  api:
+    build: .
+    ports:
+      - 5001:5000
+    environment:
+      - DATABASE_URL="postgresql+psycopg2://app:pass_word_12@db:5432/library"
+      - FLASK_ENV=development
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
