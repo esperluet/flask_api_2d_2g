@@ -1,6 +1,7 @@
+from typing import List
 from flask import Flask, jsonify, request
 
-from sqlalchemy import String, create_engine
+from sqlalchemy import String, create_engine, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 app = Flask(__name__)
@@ -59,6 +60,86 @@ def create_book():
         session.refresh(book)
     
     return jsonify(book.to_dict()), 201
+
+#List books
+@app.get("/books")
+def list_books():
+    books = None
+    with SessionLocal() as session:
+        statement = select(Book).order_by(Book.id.asc())
+
+        books: List[Book] = list(session.scalars(statement).all())
+    
+    return jsonify([book.to_dict() for book in books]), 200
+
+#Get book
+@app.get("/books/<int:book_id>")
+def get_book(book_id: int):
+    book = None
+
+    with SessionLocal() as session:
+        book = session.get(Book, book_id)
+
+    if book is None:
+        return jsonify({
+            "error": "Book not found"
+        }), 404
+
+    return jsonify(book.to_dict()), 200
+
+#update book
+@app.put("/books/<int:book_id>")
+def update_book(book_id: int):
+    data = request.get_json() or {}
+    book = None
+
+    with SessionLocal() as session:
+        book = session.get(Book, book_id)
+
+        if book is None:
+            return jsonify({
+                "error": "Book not found"
+            }), 404
+        
+        if "title" in data:
+            title = data.get("title").strip()
+
+            if not title:
+                return jsonify({"error": "title can not be empty"}), 400
+            book.title = title
+        
+        if "author" in data:
+            author = data.get("author").strip()
+
+            if not author:
+                return jsonify({"error": "author can not be empty"}), 400
+            book.author = author
+        
+        session.commit()
+        session.refresh(book)
+    return jsonify(book.to_dict()), 200
+
+#Delete a book
+@app.delete("/books/<int:book_id>")
+def delete_book(book_id: int):
+    with SessionLocal() as session:
+        book = session.get(Book, book_id)
+
+        if book is None:
+            return jsonify({
+                "error": "Book not found"
+            }), 404
+        
+        session.delete(book)
+        session.commit()
+
+        return jsonify({
+                "deleted": True,
+                "id": book_id
+            }), 200
+
+
+
 
 if __name__ == "__main__":
     init_db()
